@@ -1,0 +1,25 @@
+{
+  "name": "requiretoimports",
+  "version": "1.0.0",
+  "description": "![alt text](./logo.png \"Logo Title Text 1\")",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engine":{ "node" : ">=6.0"},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dweng0/requiretoimports.git"
+  },
+  "author": "jay martin-smith",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dweng0/requiretoimports/issues"
+  },
+  "homepage": "https://github.com/dweng0/requiretoimports#readme",
+  "dependencies": {
+    "commander": "^2.20.0",
+    "javascript-compiling-tokenizer": "^2.6.6"
+  }
+}
