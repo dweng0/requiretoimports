@@ -1,12 +1,14 @@
 # Require To Imports
 
+![alt text](./logo.png "Logo Title Text 1")
+
 Take your old files that use AMD require.
 
 and magically ~~break them.~~ turn them into files that use es6 imports!<br/>
 
 Now your files are ready to be slipped into a webpack driven project.
 
-##such #wow
+## such wow
 
 
 My use case
