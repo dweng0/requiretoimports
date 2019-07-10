@@ -1,20 +1,20 @@
-import IndexRouter from ./index/router;
-import DashboardRouter from ./dashboard/router;
-import DataFlowRouter from ./dataflow/router;
-import JobsRouter from ./jobs/router;
-import LicensesRouter from ./licenses/router;
-import LogManagerRouter from ./logmanager/router;
-import NotificationsManagerRouter from ./lognotification/router;
-import MonitorRouter from ./monitor/router;
-import NodeManagerRouter from ./nodemanager/router;
-import PolicyManagerRouter from ./policies/router;
-import RbacRouter from ./rbac/router;
-import ReportsRouter from ./reports/router;
-import RestoreRouter from ./restore/router;
-import ScheduleManagerRouter from ./schedules/router;
-import SettingsRouter from ./settings/router;
-import StorageManager from ./storage/router;
-import ServicesRouter from ./services/router;
+import IndexRouter from './index/router';
+import DashboardRouter from './dashboard/router';
+import DataFlowRouter from './dataflow/router';
+import JobsRouter from './jobs/router';
+import LicensesRouter from './licenses/router';
+import LogManagerRouter from './logmanager/router';
+import NotificationsManagerRouter from './lognotification/router';
+import MonitorRouter from './monitor/router';
+import NodeManagerRouter from './nodemanager/router';
+import PolicyManagerRouter from './policies/router';
+import RbacRouter from './rbac/router';
+import ReportsRouter from './reports/router';
+import RestoreRouter from './restore/router';
+import ScheduleManagerRouter from './schedules/router';
+import SettingsRouter from './settings/router';
+import StorageManager from './storage/router';
+import ServicesRouter from './services/router';
 const  beefer_example = () => {
 	'use strict';
 

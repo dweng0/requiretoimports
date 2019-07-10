@@ -52,15 +52,12 @@ const transformDefineTokens = (tokens, fileName, fixPathStrings) => {
                 log('fix argument provided. ...Fixing string paths')
                 importPaths = importPaths.map(path => {
                     //split on the first char, which will be either ' or "
-                    const pathArray = path.split(path[0]);
-                    return path.reduce((p, c, i) => {
-                    if (c !== path[0]) {
+                    return path.split("").reduce((p, c, i) => {
                         if (i === 1) {
-                            p + "./";
+                            p = p + "./";
                         }
                         return p + c;
-                    }
-                    return p}, '');
+                    }, '');
                 });
             }
 			definedPaths =  true;
