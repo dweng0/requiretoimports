@@ -5,14 +5,14 @@ const shell = require('shelljs');
 const path = require('path');
 const fs = require('fs');
 
-const transformDefineTokens = tokens => {
+const transformDefineTokens = (tokens, fileName) => {
+	const variableName = fileName.split('.')[0];
 	const log = message => {
 		console.log(message);
 	};
 	let enterDefines = false;
 	let definedPaths = false;
 	let definedVariables = false;
-	let codeblockreached = false;
 	let importTokens = [];
 	let importPaths = [];
 	let importVariables = [];
@@ -53,7 +53,7 @@ const transformDefineTokens = tokens => {
 
 			const functionTokens = token.value.find(({type}) => { return type === 'params'});
 			log('pulling variables');
-			importVariables = functionTokens.value.reduce((p, c) => {
+			importVariables = functionTo kens.value.reduce((p, c) => {
 				if (c.type === "name") {
 					p.push(c.value);
 				}
@@ -65,14 +65,44 @@ const transformDefineTokens = tokens => {
 			log('adding new import tokens.');
 			buildNewDefinitionTokens();
 
-			log('removing require tokens.');
-			importTokens.push({type: "name", value: "function"});
-			importTokens.push({type: "params", value: []}); //pull stuff from initialize and place here
-			importTokens = importTokens.concat(codeBlockTokens);
+			log(`adding es6 wrapper, setting variable name to ${variableName}`);
+
+			importTokens.push({
+				type: "const",
+				value: [
+				  { type: "space", value: " " },
+				  { type: "name", value: variableName},
+				  { type: "space", value: " " },
+				  { type: "assigner", value: "=" },
+				  { type: "space", value: " " },
+				  { type: "params", value: [] },
+				  { type: "space", value: " " },
+				  { type: "operator", value: "=>" },
+				  { type: "space", value: " " },
+				  {
+					type: "codeblock",
+					value: codeBlockTokens.value
+				  }]
+			  });
+			
+			log('adding es6 exports');
+			importTokens = importTokens.concat([
+				{ "type": "eol", "value": "\r" },
+				{ "type": "carriagereturn", "value": "\n" },
+				{ "type": "name", "value": "export" },
+				{ "type": "space", "value": " " },
+				{ "type": "name", "value": "default" },
+				{ "type": "space", "value": " " },
+				{ "type": "name", "value": variableName },
+				{ "type": "statementseperator", "value": ";" },
+				{ "type": "eol", "value": "\r" },
+				{ "type": "carriagereturn", "value": "\n" }
+			])
 		}
 
 		if(token.value === "define") { enterDefines = true}
 	});
+
 	log('complete...')
 	return importTokens;
 };
@@ -141,8 +171,8 @@ const transformer = (source, destination, cmd) => {
 				if (path.extname(file) === '.js') {
 					log(`tokenizing...`);
 					const lexer = new LexicalAnalyzer({ verbose: false });
-					const lexicalResult = lexer.start(data.toString());
-					const newTokens = transformDefineTokens(lexicalResult.tokens);
+					const lexicalResult = lexer.start(data.toString());					
+					const newTokens = transformDefineTokens(lexicalResult.tokens, item.short);
 					const newFile = new Generator().start(newTokens);
 					fs.writeFile(path.resolve(`${destination}/${item.short}`), newFile, function (err) {
 						if (err) {

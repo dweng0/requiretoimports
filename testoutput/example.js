@@ -15,30 +15,32 @@ import ScheduleManagerRouter from 'schedules/router';
 import SettingsRouter from 'settings/router';
 import StorageManager from 'storage/router';
 import ServicesRouter from 'services/router';
+const  example = () => {
+	'use strict';
 
-'use strict';
+	var  Routers = {
+		initialize: function()
+		{
+			new IndexRouter();
+			new DashboardRouter();
+			new DataFlowRouter();
+			new JobsRouter();
+			new LicensesRouter();
+			new LogManagerRouter();
+			new NotificationsManagerRouter();
+			new MonitorRouter();
+			new NodeManagerRouter();
+			new PolicyManagerRouter();
+			new RbacRouter();
+			new ReportsRouter();
+			new RestoreRouter();
+			new ScheduleManagerRouter();
+			new SettingsRouter();
+			new StorageManager();
+			new ServicesRouter();
+		}
+	};
 
-var  Routers = {
-	initialize: function()
-	{
-		new IndexRouter();
-		new DashboardRouter();
-		new DataFlowRouter();
-		new JobsRouter();
-		new LicensesRouter();
-		new LogManagerRouter();
-		new NotificationsManagerRouter();
-		new MonitorRouter();
-		new NodeManagerRouter();
-		new PolicyManagerRouter();
-		new RbacRouter();
-		new ReportsRouter();
-		new RestoreRouter();
-		new ScheduleManagerRouter();
-		new SettingsRouter();
-		new StorageManager();
-		new ServicesRouter();
-	}
-};
-
-return Routers;
+	return Routers;
+}
+export default example;
