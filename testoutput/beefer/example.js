@@ -15,7 +15,7 @@ import ScheduleManagerRouter from ./schedules/router;
 import SettingsRouter from ./settings/router;
 import StorageManager from ./storage/router;
 import ServicesRouter from ./services/router;
-const  example = () => {
+const  beefer_example = () => {
 	'use strict';
 
 	var  Routers = {
@@ -43,4 +43,4 @@ const  example = () => {
 
 	return Routers;
 }
-export default example;
+export default beefer_example;

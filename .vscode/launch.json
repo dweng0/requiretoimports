@@ -4,14 +4,15 @@
 	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
 	"version": "0.2.0",
 	"configurations": [
+
 		{
-		 
+
             "type": "node",
             "request": "launch",
             "name": "debugMode",
-            "program": "${workspaceRoot}\\index.js",
+            "program": "${workspaceRoot}/index.js",
             "stopOnEntry": false,
-            "args": ["tr", "-l", "-r", "./test", "./testoutput"],
+            "args": ["tr", "-l", "-r", "-f", "./test", "./testoutput"],
             "cwd": "${workspaceRoot}",
             "runtimeArgs": [
                 "--nolazy"
@@ -22,7 +23,7 @@
             "console": "internalConsole",
             "sourceMaps": false,
             "outFiles": []
-        
+
 		}
 	]
 }
