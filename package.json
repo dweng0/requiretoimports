@@ -7,7 +7,9 @@
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "engine":{ "node" : ">=6.0"},
+  "engine": {
+    "node": ">=6.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dweng0/requiretoimports.git"
@@ -20,6 +22,7 @@
   "homepage": "https://github.com/dweng0/requiretoimports#readme",
   "dependencies": {
     "commander": "^2.20.0",
-    "javascript-compiling-tokenizer": "^2.6.6"
+    "javascript-compiling-tokenizer": "^2.7.1",
+    "shelljs": "^0.8.3"
   }
 }
