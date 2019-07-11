@@ -8,9 +8,7 @@ const fs = require('fs');
 const _ = require('underscore');
 
 //transformDefineTokens  {tokens: lexicalResult.tokens, path: item.short, fixPathStrings: cmd.path}
-const transformDefineTokens = (tokens, fileName, fixPathStrings, verbose) => {
-	const variableName = fileName.split('.')[0].replace("/","_");
-
+const transformDefineTokens = (tokens, variableName, fixPathStrings, verbose) => {
 	const log = message => {
 		if (verbose) {
 			console.log(message);
@@ -147,12 +145,12 @@ const transformDefineTokens = (tokens, fileName, fixPathStrings, verbose) => {
 	//should always be a define function, but we only care about what is in the params of the define function
 	if (tokens.find(token => { return token.type === 'params'})) 
 	{
-		tokens = returnType(tokens, 'params');		
+		tokens = returnType(tokens, 'params');
 	}
 	else 
 	{
-		log('could not find define function');
-		throw new Error('Unable to locate define function');
+		log('could not find define function, returning tokens');
+		return tokens;
 	}
 	
 	/**
@@ -220,25 +218,40 @@ const transformDefineTokens = (tokens, fileName, fixPathStrings, verbose) => {
 		const name = constToken.value.find(assignmentToken => { return (assignmentToken.type === 'name')}).value;
 		
 		const requireToken = constToken.value.find(assignmentToken => { return (assignmentToken.type === 'params')})
-		let path = requireToken.value[0].value;
 		
-		if (fixPathStrings) {
-			log(`Fixing path ${path}`);
-			path = path.split("").reduce((p, c, i) => {
-				if (i === 1) {
-					p = p + "./";
+		if ( requireToken && !_.isEmpty(requireToken.value) && requireToken.value[0].type === 'string') {
+			let path = requireToken.value[0].value;
+			if (fixPathStrings) {
+				if(!path.includes('!'))
+				{
+					log(`Fixing path ${path}`);
+					path = path.split("").reduce((p, c, i) => {
+						if (i === 1) {
+							p = p + "./";
+						}
+						return p + c;
+					}, '');
 				}
-				return p + c;
-			}, '');
+				else
+				{
+					log(`Path ${path} contains an illegal character, stripping`);
+					path = "'./" + path.split('!')[1];
+				}
+				
+			}
+	
+			if (isRequiredeclarataion) {
+				importTokens = importTokens.concat(getImportToken(name, path));
+			}
+			else
+			{
+				return constToken;
+			}
 		}
-
-		if (isRequiredeclarataion) {
-			importTokens = importTokens.concat(getImportToken(name, path));
-		}
-		else
-		{
+		else {
 			return constToken;
 		}
+	
 	});
 	
 	//now wrap the codeblock in an es6 fn 
@@ -281,15 +294,19 @@ const transformer = (source, destination, cmd) => {
 
 		let fileIndex = files.length;
 		let filePaths = [];
-
+		const baseFilePathLength = source.split('/').length;
+	
 		while (fileIndex--) {
 			let file = files[fileIndex];
 			if (file.split('.').length < 2) {
 				files.splice(fileIndex, 1);
 			} else {
 				//oddly, shelljs does not give back the absolute path, so we have to stick that back on
-				if (dir.split('.').length > 0) {
-					filePaths.push({ short: file, long: searchDir + '/' + file });
+				if (dir.split('/').length > 0) {					
+					const name = file.split('/').find(part => {return part.includes('.')}).split('.')[0];
+					const sourceFile = dir + "/" + file;
+					const destinationFile = destination + "/" + file;
+					filePaths.push({ name, sourceFile, destinationFile });
 				} else {
 					filePaths.push(searchDir);
 				}
@@ -306,9 +323,9 @@ const transformer = (source, destination, cmd) => {
 	} else {
 		log(`transpiling...`);
 		sourceFiles.forEach(item => {
-			log(`${item.short}...`);
+			log(`${item.name}...`);
 
-			const file = path.resolve(item.long);
+			const file = path.resolve(item.sourceFile);
 			fs.readFile(file, function (err, data) {
 				if (err) {
 					throw err;
@@ -317,14 +334,40 @@ const transformer = (source, destination, cmd) => {
 					log(`tokenizing...`);
 					const lexer = new LexicalAnalyzer({ verbose: false });
 					const lexicalResult = lexer.start(data.toString());
-					const newTokens = transformDefineTokens(lexicalResult.tokens, item.short, cmd.fix, cmd.verbose);
+					const newTokens = transformDefineTokens(lexicalResult.tokens, item.name, cmd.fix, cmd.verbose);
 					const newFile = new Generator().start(newTokens);
-					fs.writeFile(path.resolve(`${destination}/${item.short}`), newFile, function (err) {
-						if (err) {
-							return console.log(err);
+					const destinationDir = item.destinationFile.split('/').reduce((p, c) => {
+						if(!c.includes('.'))
+						{
+							p = p + "/" + c;
 						}
-						console.log("The file was saved!");
+						return p;
+					}, '.');
+					const write = (filePath, file) => {
+					
+						fs.writeFile(path.resolve(filePath), file, function (err) {
+							if (err) {
+								return console.log(err);
+							}
+							console.log("The file was saved!");
+						});
+					}
+
+					fs.exists(destinationDir, (exists) => {
+						if (!exists) {
+							fs.mkdir(destinationDir, (err) => {
+								if (err) {
+									throw err;
+								} 
+								write(item.destinationFile, newFile);
+							});
+						}
+						else  {
+							write(item.destinationFile, newFile);
+						}
 					});
+					
+					
 				}
 			});
 		});
