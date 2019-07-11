@@ -22,7 +22,8 @@
   "homepage": "https://github.com/dweng0/requiretoimports#readme",
   "dependencies": {
     "commander": "^2.20.0",
-    "javascript-compiling-tokenizer": "^2.7.1",
-    "shelljs": "^0.8.3"
+    "javascript-compiling-tokenizer": "^2.8.2",
+    "shelljs": "^0.8.3",
+    "underscore": "^1.9.1"
   }
 }

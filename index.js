@@ -5,122 +5,253 @@ const program = require('commander');
 const shell = require('shelljs');
 const path = require('path');
 const fs = require('fs');
+const _ = require('underscore');
+
 //transformDefineTokens  {tokens: lexicalResult.tokens, path: item.short, fixPathStrings: cmd.path}
-const transformDefineTokens = (tokens, fileName, fixPathStrings) => {
+const transformDefineTokens = (tokens, fileName, fixPathStrings, verbose) => {
 	const variableName = fileName.split('.')[0].replace("/","_");
 
 	const log = message => {
-		console.log(message);
+		if (verbose) {
+			console.log(message);
+		}
+		
 	};
 
-	let enterDefines = false;
-	let definedPaths = false;
-	let definedVariables = false;
 	let importTokens = [];
-	let importPaths = [];
-	let importVariables = [];
-
-	const buildNewDefinitionTokens = () => {
-		importPaths.forEach((path, index) => {
-			importTokens.push({type: "name", value: "import"});
-			importTokens.push({type: "space", value: " "});
-			importTokens.push({type: "name", value: importVariables[index]})
-			importTokens.push({type: "space", value: " "});
-			importTokens.push({type: "name", value: "from"});
-			importTokens.push({type: "space", value: " "});
-			importTokens.push({type: "string", value: path});
-			importTokens.push({type: "statementseperator", value: ';'});
-			importTokens.push({type: "eol", value: "\r"});
-			importTokens.push({type: "carriagereturn", value: "\n"});
-		});
-
+	
+	const getImportToken = (variableName, path) => {
+		return[ {type: "import", value: [
+			{type: "name", value: variableName},
+			{type: "space", value: " "},
+			{type: "name", value: "from"},
+			{type: "space", value: " "},
+			{type: "string", value: path},
+			{type: "statementseperator", value: ';'},
+			{type: "eol", value: "\r"},
+			{type: "carriagereturn", value: "\n"}
+		]}]
 	}
 
-	tokens.forEach(token => {
-
-		//pull the define paths from the first argument of the define function
-		if (enterDefines && !definedPaths && token.type === 'params') {
-			log('pulling paths from define function params');
-			importPaths = token.value[0].value.reduce((p, c) => {
-				if (c.type === "string") {
-					p.push(c.value);
+	/**
+	 * returns the value of the type provided as a new arr
+	 */
+	const returnType = (arr, type) => {
+		return arr.reduce((p, c) => {
+			if (c.type == type) {
+			  p = p.concat(c.value);
+			}
+			return p;
+		 }, [])
+	}
+	
+	const removeType = (arr, type, once) => {
+		let ignore = false;
+		return arr.reduce((p, c) => {
+			if (ignore) {
+				p.push(c);
+			} 
+			else if(c.type !== type)
+			{
+				p.push(c);
+			}
+			else {
+				if (once) {
+					ignore = true;
 				}
-				return p;
-			}, []);
+			}
+			return p;
+		}, []);
+	}
 
-            if (fixPathStrings) {
-                log('fix argument provided. ...Fixing string paths')
-                importPaths = importPaths.map(path => {
-                    //split on the first char, which will be either ' or "
-                    return path.split("").reduce((p, c, i) => {
-                        if (i === 1) {
-                            p = p + "./";
-                        }
-                        return p + c;
-                    }, '');
-                });
-            }
-			definedPaths =  true;
+	/**
+	 * reducer that pushes the results of the reducer function onto the array, , if its empty then the current item [c] is ignored
+	 */
+	const conditionalReducer = (arr, type, reducerFn) => {
+		return arr.reduce((p, c) => {
+			if(c.type === type)
+			{
+				const results = reducerFn(c);
+				if(!_.isEmpty(results))
+				{
+					p.push(c);
+				}
+			}
+			else
+			{
+				p.push(c);
+			}
+			
+			return p;
+		}, []);
+	}
+
+	const conditionalTokenMap = (arr, type, mapFn) => {
+		return arr.map(token => {
+			if(token.type === type) {
+				const newToken = mapFn(token);
+				if (!newToken) {
+					throw new Error('conditional token map must return an object');
+				}
+				return newToken
+			}
+			return token;
+		});
+	}
+
+	const wrapTokens = (arr, variableName) => {
+		return {
+			type: "const",
+			value: [
+			  { type: "space", value: " " },
+			  { type: "name", value: variableName},
+			  { type: "space", value: " " },
+			  { type: "assigner", value: "=" },
+			  { type: "space", value: " " },
+			  { type: "params", value: [] },
+			  { type: "space", value: " " },
+			  { type: "operator", value: "=>" },
+			  { type: "space", value: " " },
+			  {
+				type: "codeblock",
+				value: arr
+			  },
+			  { "type": "eol", "value": "\r" },
+			  { "type": "carriagereturn", "value": "\n" },
+			  { "type": "name", "value": "export" },
+			  { "type": "space", "value": " " },
+			  { "type": "name", "value": "default" },
+			  { "type": "space", "value": " " },
+			  { "type": "name", "value": variableName },
+			  { "type": "statementseperator", "value": ";" },
+			  { "type": "eol", "value": "\r" },
+			  { "type": "carriagereturn", "value": "\n" }]
+		  }
+	}
+
+	/**
+	 *  returns import tokens array for paths and names array provided
+	 * @param {array} paths string path names
+	 * @param {array} names  array of variable names
+	 */
+	const createPathTokens = (paths, names) => {
+		let newTokens = [];
+		
+		paths.forEach((path, index) =>{
+			const name = names[index];
+			newTokens = newTokens.concat(getImportToken(name, path));
+		})
+		return newTokens;
+	}
+
+	//should always be a define function, but we only care about what is in the params of the define function
+	if (tokens.find(token => { return token.type === 'params'})) 
+	{
+		tokens = returnType(tokens, 'params');		
+	}
+	else 
+	{
+		log('could not find define function');
+		throw new Error('Unable to locate define function');
+	}
+	
+	/**
+	 * By this point we only have the params of the define token. if the first argument of define is an array
+	 * we know we need to build up an import paths list
+	 */
+	if(!_.isEmpty(tokens) && tokens[0].type === 'array') 
+	{
+		log('first argument of "define" is an array, pulling results into import path');
+		const tokenPaths = returnType(tokens, 'array');		
+		let importPaths = tokenPaths.reduce((p, c) => {
+			if (c.type === "string") {
+				p.push(c.value);
+			}
+			return p;
+		}, []);
+
+		if (fixPathStrings) {
+			log('Fixing string paths')
+			importPaths = importPaths.map(path => {
+				//split on the first char, which will be either ' or "
+				return path.split("").reduce((p, c, i) => {
+					if (i === 1) {
+						p = p + "./";
+					}
+					return p + c;
+				}, '');
+			});
 		}
 
-		//pull the variables from the argument of the function of the second argument of the define function
-		if(enterDefines && definedPaths && !definedVariables && token.type === 'params') {
+		//remove the array when finished, the last arg makes sure that only the first matching type is removed
+		tokens = removeType(tokens, 'array', true);
 
-			const functionTokens = token.value.find(({type}) => { return type === 'params'});
-			log('pulling variables');
-			importVariables = functionTokens.value.reduce((p, c) => {
-				if (c.type === "name") {
-					p.push(c.value);
+		/**
+		 * if the first argument was an array, we now need the params of the function that is the second argument
+		 * this is stored in the same depth, so we just search for the array again
+		 */
+		const functionArray = returnType(tokens, 'params');
+
+		//and build the variablenames
+		let importVariables = functionArray.reduce((p, c) => {
+			//there can be spaces and all sorts in here, so lets focus on just strings
+			if (c.type === 'name') {
+				p.push(c.value);
+			}
+			return p;
+		 }, []);
+
+		 //and remove it from the tokens
+		 tokens = removeType(tokens, 'array', true);
+
+		 //now we have paths and variables, lets create some tokens :)
+		 importTokens = createPathTokens(importPaths, importVariables);
+	}
+
+	tokens = returnType(tokens, 'codeblock');
+
+	/**
+	 * we now want to look for 'const', 'var' (naughty) and 'let' (naughty) 
+	 * check their value arrays for an assignee of 'require'. 
+	 * if it has got a require, then create a new import token and push it into the import tokens array, also,  return nothing to the reducer to strip it out of the array. 
+	 */
+	tokens = conditionalReducer(tokens, 'const', (constToken) => {
+		const isRequiredeclarataion = constToken.value.find(assignmentToken => { return (assignmentToken.type === 'assignee' && assignmentToken.value === 'require')});
+		const name = constToken.value.find(assignmentToken => { return (assignmentToken.type === 'name')}).value;
+		
+		const requireToken = constToken.value.find(assignmentToken => { return (assignmentToken.type === 'params')})
+		let path = requireToken.value[0].value;
+		
+		if (fixPathStrings) {
+			log(`Fixing path ${path}`);
+			path = path.split("").reduce((p, c, i) => {
+				if (i === 1) {
+					p = p + "./";
 				}
-				return p;
-			}, []);
-
-			const codeBlockTokens = token.value.find(({type}) => { return type === 'codeblock'});
-
-			log('adding new import tokens.');
-			buildNewDefinitionTokens();
-
-			log(`adding es6 wrapper, setting variable name to ${variableName}`);
-
-			importTokens.push({
-				type: "const",
-				value: [
-				  { type: "space", value: " " },
-				  { type: "name", value: variableName},
-				  { type: "space", value: " " },
-				  { type: "assigner", value: "=" },
-				  { type: "space", value: " " },
-				  { type: "params", value: [] },
-				  { type: "space", value: " " },
-				  { type: "operator", value: "=>" },
-				  { type: "space", value: " " },
-				  {
-					type: "codeblock",
-					value: codeBlockTokens.value
-				  }]
-			  });
-
-			log('adding es6 exports');
-			importTokens = importTokens.concat([
-				{ "type": "eol", "value": "\r" },
-				{ "type": "carriagereturn", "value": "\n" },
-				{ "type": "name", "value": "export" },
-				{ "type": "space", "value": " " },
-				{ "type": "name", "value": "default" },
-				{ "type": "space", "value": " " },
-				{ "type": "name", "value": variableName },
-				{ "type": "statementseperator", "value": ";" },
-				{ "type": "eol", "value": "\r" },
-				{ "type": "carriagereturn", "value": "\n" }
-			])
+				return p + c;
+			}, '');
 		}
 
-		if(token.value === "define") { enterDefines = true}
+		if (isRequiredeclarataion) {
+			importTokens = importTokens.concat(getImportToken(name, path));
+		}
+		else
+		{
+			return constToken;
+		}
 	});
+	
+	//now wrap the codeblock in an es6 fn 
+	tokens = wrapTokens(tokens, variableName);
 
-	log('complete...')
-	return importTokens;
+	//if we have import tokens, we need to prepend them to the token tree
+	if (importTokens) {
+		tokens = importTokens.concat(tokens);
+	}
+	return tokens;
 };
+
+
 
 const transformer = (source, destination, cmd) => {
 	//file loading
@@ -131,7 +262,6 @@ const transformer = (source, destination, cmd) => {
 	const loadDir = dir => {
 		const searchDir = dir.split('.').length > 0 ? dir : dir + '/*.js';
 		const recursive = cmd.recursive ? '-R' : '';
-        const fixPaths = cmd.fix;
 		log(`checking path ${dir} exists...`);
 
 		//check path to output to exists.. make if nots
@@ -187,7 +317,7 @@ const transformer = (source, destination, cmd) => {
 					log(`tokenizing...`);
 					const lexer = new LexicalAnalyzer({ verbose: false });
 					const lexicalResult = lexer.start(data.toString());
-					const newTokens = transformDefineTokens(lexicalResult.tokens, item.short, cmd.fix);
+					const newTokens = transformDefineTokens(lexicalResult.tokens, item.short, cmd.fix, cmd.verbose);
 					const newFile = new Generator().start(newTokens);
 					fs.writeFile(path.resolve(`${destination}/${item.short}`), newFile, function (err) {
 						if (err) {
