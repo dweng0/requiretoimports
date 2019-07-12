@@ -1,6 +1,6 @@
 {
   "name": "requiretoimports",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "![alt text](./logo.png \"Logo Title Text 1\")",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,12 @@
     "node": ">=10.0"
   },
   "keywords": [
-    "compiler","transpiler", "requiretoimport", "require", "es6import", "require converter"
+    "compiler",
+    "transpiler",
+    "requiretoimport",
+    "require",
+    "es6import",
+    "require converter"
   ],
   "repository": {
     "type": "git",
