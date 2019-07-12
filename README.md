@@ -32,7 +32,7 @@ These transpile into: <br/><br/>
 commands
 
 typical usage: <br/>
-```node index ty -r './myoldsauce' './mynewsauce'```
+```node index tr -r './myoldsauce' './mynewsauce'```
 
 This will read all files in your ```myoldsauce``` folder, transpile them and output them into the ```mynewsauce``` folder. I recommend not transpiling into the same dir <br /><br/>
 
