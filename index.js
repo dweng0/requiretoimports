@@ -19,7 +19,15 @@ const transformDefineTokens = (tokens, variableName, fixPathStrings, verbose) =>
 	let importTokens = [];
 	
 	const getImportToken = (variableName, path) => {
-		return[ {type: "import", value: [
+		let value = (_.isUndefined(variableName)) ? 
+		[
+			{type: "string", value: path},
+			{type: "statementseperator", value: ';'},
+			{type: "eol", value: "\r"},
+			{type: "carriagereturn", value: "\n"}
+		]
+		:
+		[
 			{type: "name", value: variableName},
 			{type: "space", value: " "},
 			{type: "name", value: "from"},
@@ -28,7 +36,9 @@ const transformDefineTokens = (tokens, variableName, fixPathStrings, verbose) =>
 			{type: "statementseperator", value: ';'},
 			{type: "eol", value: "\r"},
 			{type: "carriagereturn", value: "\n"}
-		]}]
+		];
+
+		return[ {type: "import", value }]
 	}
 
 	/**
@@ -98,6 +108,7 @@ const transformDefineTokens = (tokens, variableName, fixPathStrings, verbose) =>
 	}
 
 	const wrapTokens = (arr, variableName) => {
+		
 		return {
 			type: "const",
 			value: [
