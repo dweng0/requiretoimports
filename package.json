@@ -10,6 +10,9 @@
   "engine": {
     "node": ">=10.0"
   },
+  "keywords": [
+    "compiler","transpiler", "requiretoimport", "require", "es6import", "require converter"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dweng0/requiretoimports.git"
