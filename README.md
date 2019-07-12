@@ -29,7 +29,7 @@ These transpile into: <br/><br/>
 
 ![Demo](./transformation.gif "Demo")
 
-commands
+# commands
 
 typical usage: <br/>
 ```node index tr -r './myoldsauce' './mynewsauce'```
