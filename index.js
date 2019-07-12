@@ -171,13 +171,19 @@ const transformDefineTokens = (tokens, variableName, fixPathStrings, verbose) =>
 		if (fixPathStrings) {
 			log('Fixing string paths')
 			importPaths = importPaths.map(path => {
-				//split on the first char, which will be either ' or "
-				return path.split("").reduce((p, c, i) => {
-					if (i === 1) {
-						p = p + "./";
-					}
-					return p + c;
-				}, '');
+				if(!path.includes('/'))
+				{
+					return path;
+				}
+				else
+				{
+					return path.split("").reduce((p, c, i) => {
+						if (i === 1) {
+							p = p + "./";
+						}
+						return p + c;
+					}, '');
+				}
 			});
 		}
 
@@ -355,8 +361,8 @@ const transformer = (source, destination, cmd) => {
 
 					fs.exists(destinationDir, (exists) => {
 						if (!exists) {
-							fs.mkdir(destinationDir, (err) => {
-								if (err) {
+							fs.mkdir(destinationDir, {recursive: true}, (err) => {
+								if (err && err.code !== "EEXIST") {
 									throw err;
 								} 
 								write(item.destinationFile, newFile);
